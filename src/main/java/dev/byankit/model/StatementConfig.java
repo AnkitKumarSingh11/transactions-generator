@@ -15,11 +15,12 @@ public class StatementConfig {
     private final String dateFormat;
     private final String accountHolderName;
     private final String accountNumber;
+    private final String paytmId;
 
     public StatementConfig(TransactionSource source, TransactionType type, int count,
                            LocalDate startDate, LocalDate endDate, double initialBalance,
                            String outputPath, String dateFormat,
-                           String accountHolderName, String accountNumber) {
+                           String accountHolderName, String accountNumber, String paytmId) {
         this.source = source != null ? source : TransactionSource.HDFC;
         this.type = type != null ? type : TransactionType.BANKSTATEMENT;
         this.count = count > 0 ? count : 50;
@@ -27,9 +28,10 @@ public class StatementConfig {
         this.endDate = endDate != null ? endDate : LocalDate.now();
         this.initialBalance = initialBalance >= 0 ? initialBalance : 50000.00;
         this.outputPath = outputPath;
-        this.dateFormat = (dateFormat != null && !dateFormat.isBlank()) ? dateFormat : "dd/MM/yy";
+        this.dateFormat = (dateFormat != null && !dateFormat.isBlank()) ? dateFormat : "dd/MM/yyyy";
         this.accountHolderName = accountHolderName;
         this.accountNumber = accountNumber;
+        this.paytmId = paytmId;
     }
 
     public TransactionSource getSource() {
@@ -72,6 +74,10 @@ public class StatementConfig {
         return accountNumber;
     }
 
+    public String getPaytmId() {
+        return paytmId;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -84,9 +90,10 @@ public class StatementConfig {
         private LocalDate endDate = LocalDate.now();
         private double initialBalance = 50000.00;
         private String outputPath = null;
-        private String dateFormat = "dd/MM/yy";
+        private String dateFormat = "dd/MM/yyyy";
         private String accountHolderName = null;
         private String accountNumber = null;
+        private String paytmId = null;
 
         public Builder source(TransactionSource source) {
             this.source = source;
@@ -138,8 +145,13 @@ public class StatementConfig {
             return this;
         }
 
+        public Builder paytmId(String paytmId) {
+            this.paytmId = paytmId;
+            return this;
+        }
+
         public StatementConfig build() {
-            return new StatementConfig(source, type, count, startDate, endDate, initialBalance, outputPath, dateFormat, accountHolderName, accountNumber);
+            return new StatementConfig(source, type, count, startDate, endDate, initialBalance, outputPath, dateFormat, accountHolderName, accountNumber, paytmId);
         }
     }
 }

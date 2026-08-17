@@ -24,7 +24,7 @@ import java.util.concurrent.Callable;
 @Command(
         name = "generate",
         mixinStandardHelpOptions = true,
-        version = "1.0-SNAPSHOT",
+        version = "1.0.0",
         description = "Universal synthetic financial transaction statement generator (HDFC, Paytm)."
 )
 public class GenerateCommand implements Callable<Integer> {

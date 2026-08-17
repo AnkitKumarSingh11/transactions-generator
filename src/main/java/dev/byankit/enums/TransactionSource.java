@@ -3,8 +3,8 @@ package dev.byankit.enums;
 public enum TransactionSource {
     HDFC("HDFC Bank"),
     SBI("SBI Bank"),
-    PAYTM("Paytm App"),
-    PAYZAPP("HDFC PayZapp App");
+    PAYTM("Paytm Wallet"),
+    PAYZAPP("HDFC PayZapp Wallet");
 
     private final String name;
 
@@ -25,6 +25,6 @@ public enum TransactionSource {
                 return src;
             }
         }
-        throw new IllegalArgumentException("Unknown transaction source: " + sourceStr + ". Supported sources: HDFC, SBI, PAYTM, PAYZAPP");
+        return HDFC;
     }
 }

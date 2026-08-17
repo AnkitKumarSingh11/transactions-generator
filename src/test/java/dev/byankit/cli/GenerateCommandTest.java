@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class GenerateCommandTest {
 
     @Test
-    void testExecuteCliGenerateCommand() throws Exception {
+    void testExecuteCliHdfcGenerateCommand() throws Exception {
         File tempFile = File.createTempFile("cli_test_statement", ".csv");
         tempFile.deleteOnExit();
 
@@ -31,21 +31,21 @@ class GenerateCommandTest {
     }
 
     @Test
-    void testExecuteCliCustomNameAndAccountNumber() throws Exception {
-        String customName = "Ankit Kumar Singh";
-        String customAccNo = "50100987654321";
+    void testExecuteCliPaytmGenerateCommand() throws Exception {
+        String customName = "Amina Khan";
+        String customPaytmId = "paytm.s1mdx1j@pty";
 
         String[] args = {
-                "--source", "HDFC",
+                "--source", "PAYTM",
                 "--count", "15",
                 "--name", customName,
-                "--account-number", customAccNo
+                "--paytm-id", customPaytmId
         };
 
         int exitCode = new CommandLine(new GenerateCommand()).execute(args);
         assertEquals(0, exitCode);
 
-        String expectedFileName = "ANKIT_KUMAR_SINGH_50100987654321_HDFC_statement.csv";
+        String expectedFileName = "AMINA_KHAN_paytm.s1mdx1j_pty_PAYTM_statement.csv";
         File generatedFile = new File(expectedFileName);
         assertTrue(generatedFile.exists());
         assertTrue(generatedFile.length() > 0);

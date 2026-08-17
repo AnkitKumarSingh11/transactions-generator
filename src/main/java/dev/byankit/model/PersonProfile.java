@@ -7,6 +7,7 @@ public class PersonProfile {
     private final String accountNumber;
     private final String ifscCode;
     private final String upiHandle;
+    private final String paytmId;
     private final String companyName;
     private final double monthlySalary;
     private final double monthlyRent;
@@ -15,11 +16,11 @@ public class PersonProfile {
     private final int utilityPaymentDay;
 
     public PersonProfile(DataRandomizer randomizer, double minSalary, double maxSalary) {
-        this(randomizer, minSalary, maxSalary, null, null);
+        this(randomizer, minSalary, maxSalary, null, null, null);
     }
 
     public PersonProfile(DataRandomizer randomizer, double minSalary, double maxSalary,
-                         String customName, String customAccountNumber) {
+                         String customName, String customAccountNumber, String customPaytmId) {
         if (customName != null && !customName.isBlank()) {
             this.fullName = customName.trim().toUpperCase();
         } else {
@@ -32,9 +33,16 @@ public class PersonProfile {
             this.accountNumber = "50100" + String.format("%09d", randomizer.getRandom().nextInt(1000000000));
         }
 
-        this.ifscCode = "HDFC000" + String.format("%04d", randomizer.getRandom().nextInt(10000));
-
         String sanitizedName = fullName.toLowerCase().replaceAll("[^a-z]", "");
+
+        if (customPaytmId != null && !customPaytmId.isBlank()) {
+            this.paytmId = customPaytmId.trim();
+        } else {
+            this.paytmId = "paytm." + sanitizedName.substring(0, Math.min(6, sanitizedName.length()))
+                    + String.format("%03d", randomizer.getRandom().nextInt(1000)) + "@pty";
+        }
+
+        this.ifscCode = "HDFC000" + String.format("%04d", randomizer.getRandom().nextInt(10000));
         this.upiHandle = sanitizedName + "@okhdfcbank";
 
         String[] companies = {"TCS", "INFOSYS", "WIPRO", "ACCENTURE", "GOOGLE INDIA", "FLIPKART", "AMAZON INDIA", "HDFC BANK"};
@@ -63,6 +71,10 @@ public class PersonProfile {
 
     public String getUpiHandle() {
         return upiHandle;
+    }
+
+    public String getPaytmId() {
+        return paytmId;
     }
 
     public String getCompanyName() {

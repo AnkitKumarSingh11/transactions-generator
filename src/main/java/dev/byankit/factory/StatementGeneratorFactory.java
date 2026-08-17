@@ -1,8 +1,11 @@
 package dev.byankit.factory;
 
 import dev.byankit.enums.TransactionSource;
+import dev.byankit.generator.GenericStatementGenerator;
 import dev.byankit.generator.HdfcStatementGenerator;
 import dev.byankit.generator.StatementGenerator;
+import dev.byankit.schema.SchemaRegistry;
+import dev.byankit.schema.StatementSchema;
 
 public class StatementGeneratorFactory {
 
@@ -10,14 +13,7 @@ public class StatementGeneratorFactory {
         if (source == null) {
             return new HdfcStatementGenerator();
         }
-        switch (source) {
-            case HDFC:
-            case PAYZAPP:
-            case SBI:
-            case PAYTM:
-            default:
-                // Currently starting with HDFC Bank schema generation
-                return new HdfcStatementGenerator();
-        }
+        StatementSchema schema = SchemaRegistry.getSchema(source);
+        return new GenericStatementGenerator(schema);
     }
 }

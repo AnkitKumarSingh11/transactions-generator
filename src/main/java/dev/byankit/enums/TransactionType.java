@@ -2,8 +2,7 @@ package dev.byankit.enums;
 
 public enum TransactionType {
     BANKSTATEMENT("File containing bank statement transactions"),
-    UPISERVICE("For files containing UPI transactions"),
-    WALLET("File containing wallet payments transactions");
+    UPISERVICE("For files containing UPI transactions");
 
     private final String description;
 
@@ -24,6 +23,6 @@ public enum TransactionType {
                 return type;
             }
         }
-        throw new IllegalArgumentException("Unknown transaction type: " + typeStr + ". Supported types: BANKSTATEMENT, UPISERVICE, WALLET");
+        throw new IllegalArgumentException("Unknown transaction type: " + typeStr + ". Supported types: BANKSTATEMENT, UPISERVICE");
     }
 }

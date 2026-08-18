@@ -10,7 +10,6 @@ public class SchemaRegistry {
 
     static {
         register(new HdfcStatementSchema());
-        register(new PaytmStatementSchema());
     }
 
     public static void register(StatementSchema schema) {

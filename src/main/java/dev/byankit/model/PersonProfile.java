@@ -4,10 +4,12 @@ import dev.byankit.generator.DataRandomizer;
 
 public class PersonProfile {
     private final String fullName;
+    private final String email;
+    private final String phoneNumber;
     private final String accountNumber;
     private final String ifscCode;
     private final String upiHandle;
-    private final String paytmId;
+    private final String customerId;
     private final String companyName;
     private final double monthlySalary;
     private final double monthlyRent;
@@ -16,11 +18,11 @@ public class PersonProfile {
     private final int utilityPaymentDay;
 
     public PersonProfile(DataRandomizer randomizer, double minSalary, double maxSalary) {
-        this(randomizer, minSalary, maxSalary, null, null, null);
+        this(randomizer, minSalary, maxSalary, null, null);
     }
 
     public PersonProfile(DataRandomizer randomizer, double minSalary, double maxSalary,
-                         String customName, String customAccountNumber, String customPaytmId) {
+                         String customName, String customAccountNumber) {
         if (customName != null && !customName.isBlank()) {
             this.fullName = customName.trim().toUpperCase();
         } else {
@@ -34,16 +36,13 @@ public class PersonProfile {
         }
 
         String sanitizedName = fullName.toLowerCase().replaceAll("[^a-z]", "");
-
-        if (customPaytmId != null && !customPaytmId.isBlank()) {
-            this.paytmId = customPaytmId.trim();
-        } else {
-            this.paytmId = "paytm." + sanitizedName.substring(0, Math.min(6, sanitizedName.length()))
-                    + String.format("%03d", randomizer.getRandom().nextInt(1000)) + "@pty";
-        }
+        int randomSuffix = 100 + randomizer.getRandom().nextInt(900);
+        this.email = (sanitizedName.isEmpty() ? "user" : sanitizedName) + randomSuffix + "@example.com";
+        this.phoneNumber = "+91" + (7 + randomizer.getRandom().nextInt(3)) + String.format("%09d", randomizer.getRandom().nextInt(1000000000));
 
         this.ifscCode = "HDFC000" + String.format("%04d", randomizer.getRandom().nextInt(10000));
         this.upiHandle = sanitizedName + "@okhdfcbank";
+        this.customerId = "CUST" + String.format("%07d", randomizer.getRandom().nextInt(10000000));
 
         String[] companies = {"TCS", "INFOSYS", "WIPRO", "ACCENTURE", "GOOGLE INDIA", "FLIPKART", "AMAZON INDIA", "HDFC BANK"};
         this.companyName = companies[randomizer.getRandom().nextInt(companies.length)];
@@ -61,6 +60,14 @@ public class PersonProfile {
         return fullName;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
     public String getAccountNumber() {
         return accountNumber;
     }
@@ -73,8 +80,8 @@ public class PersonProfile {
         return upiHandle;
     }
 
-    public String getPaytmId() {
-        return paytmId;
+    public String getCustomerId() {
+        return customerId;
     }
 
     public String getCompanyName() {
@@ -101,3 +108,4 @@ public class PersonProfile {
         return utilityPaymentDay;
     }
 }
+

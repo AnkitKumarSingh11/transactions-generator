@@ -31,8 +31,7 @@ public class SyntheaFinancialEngine {
                 minSalary,
                 maxSalary,
                 config.getAccountHolderName(),
-                config.getAccountNumber(),
-                config.getPaytmId()
+                config.getAccountNumber()
         );
         this.lastGeneratedProfile = profile;
 

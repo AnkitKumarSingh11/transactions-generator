@@ -1,85 +1,27 @@
 # FinStream Transactions Generator CLI 🏦⚡
 
-A powerful, modular Java CLI tool designed to generate realistic synthetic financial transactions and bank account statements. 
+A powerful, modular Java CLI tool designed to generate realistic synthetic financial bank transaction statements and user profile metadata.
 
-Inspired by **[Synthea™](https://github.com/synthetichealth/synthea)** (the synthetic patient record generator for healthcare FHIR format), **FinStream** simulates realistic **demographic profiles and financial life events** (recurring monthly salary, rent, utilities, OTT subscriptions, day-to-day micro-UPI transactions, POS card payments, ATM cash withdrawals, and savings interest credits).
-
-Currently, the active statement generation target is the **HDFC Bank CSV Statement Schema**. The codebase is built on an **extensible `StatementSchema` & `SchemaRegistry` architecture** so that when additional bank or wallet schemas (SBI, ICICI, Paytm, PayZapp) are defined in the future, they can be plugged in seamlessly.
+Inspired by **[Synthea™](https://github.com/synthetichealth/synthea)** (the synthetic patient record generator for healthcare FHIR format), **FinStream** simulates realistic **demographic user profiles and financial life events** (recurring monthly salary, rent, utilities, day-to-day micro-UPI transactions, POS card payments, ATM cash withdrawals, and savings interest credits).
 
 ---
 
 ## 🌟 Key Features
 
-- **Active HDFC CSV Statement Schema**:
-  - Full support for HDFC Bank CSV statement format:
-    `Date,Narration Value Dat,Debit Amount,Credit Amount,Chq/Ref Number,Closing Balance`
+- **HDFC Bank Statement Schema (Default)**:
+  - Header: `Date,Narration Value Dat,Debit Amount,Credit Amount,Chq/Ref Number,Closing Balance`
+- **User Profile Metadata CSV Generation**:
+  - Automatically outputs a companion User Details CSV alongside every statement containing demographic & bank account details.
+  - Header: `Name, Email, Mobile Number, Account Number, IFSC Code, UPI ID, Customer ID, Company Name, Monthly Salary`
 - **Extensible Multi-Bank Architecture**:
-  - `StatementSchema` strategy interface and `SchemaRegistry` framework ensure future schemas (SBI, Paytm, ICICI, PayZapp) can be registered without modifying the CSV writer or CLI engine.
+  - `StatementSchema` strategy interface and `SchemaRegistry` framework support bank transaction schemas (HDFC, SBI).
+- **Auto-Generated Filenames with `-o /path/to/dir`**:
+  - The `-o` / `--output` flag expects a target directory or output path.
+  - Filenames are automatically generated inside the directory based on the person's name and Account Number:
+    - Statement CSV: `<Name>_<AccountNo>_HDFC_statement.csv`
+    - User Details CSV: `<Name>_<AccountNo>_user_details.csv`
 - **Synthea-style Financial Life Simulation**:
-  - **Account Holder Profiles (`PersonProfile`)**: Models synthetic account holder identities (`--name "Ankit Singh"`, `--account-number "50100987654321"`).
-  - **Dynamic Output Filename**: Automatically names output files after the person and account number (`<Name>_<AccNo>_HDFC_statement.csv`).
-  - **Flexible Quotas**: Generate any requested transaction count (`-n 50`, `-n 200`).
-  - **Lifecycle Cadence**: Models monthly salary credit $\rightarrow$ rent payment $\rightarrow$ utility bills $\rightarrow$ micro-UPI spending $\rightarrow$ interest credits.
-- **External Configuration (`app.properties`)**:
-  - Properties file located at `src/main/resources/app.properties`. CLI options override properties dynamically.
-
----
-
-## 🛠️ Architecture Overview
-
-```
-src/main/
-├── java/dev/byankit/
-│   ├── App.java                              # Main CLI entrypoint
-│   ├── cli/
-│   │   └── GenerateCommand.java              # Picocli command & flag options
-│   ├── config/
-│   │   └── AppConfig.java                    # app.properties config loader
-│   ├── enums/
-│   │   ├── TransactionSource.java            # Bank / Source enum
-│   │   ├── TransactionType.java              # Statement type enum
-│   │   └── TransactionCategory.java          # UPI, NEFT, IMPS, ATM, CARD, SALARY, BILL
-│   ├── model/
-│   │   ├── PersonProfile.java                # Demographic profile & salary rules
-│   │   ├── Transaction.java                  # Core domain transaction model
-│   │   └── StatementConfig.java              # Configuration builder
-│   ├── schema/
-│   │   ├── StatementSchema.java              # Extensible schema interface
-│   │   ├── AbstractStatementSchema.java      # Base formatter utilities
-│   │   ├── HdfcStatementSchema.java          # HDFC CSV statement schema
-│   │   └── SchemaRegistry.java               # Central registry for bank schemas
-│   ├── generator/
-│   │   ├── DataRandomizer.java               # Randomizer for names, UTRs, amounts
-│   │   ├── SyntheaFinancialEngine.java       # Synthea financial lifecycle engine
-│   │   ├── StatementGenerator.java           # Strategy interface
-│   │   ├── GenericStatementGenerator.java    # Generic schema-backed generator
-│   │   └── HdfcStatementGenerator.java       # HDFC generator implementation
-│   ├── factory/
-│   │   └── StatementGeneratorFactory.java    # Factory resolving generators
-│   └── writer/
-│       └── CsvStatementWriter.java           # Universal CSV writer using StatementSchema
-└── resources/
-    └── app.properties                        # Application properties file
-```
-
----
-
-## ⚙️ Configuration via `app.properties`
-
-```properties
-# Default Generator Settings
-generator.default.source=HDFC
-generator.default.type=BANKSTATEMENT
-generator.default.count=50
-generator.default.initial_balance=50000.00
-generator.default.output_path=hdfc_statement.csv
-generator.default.date_format=dd/MM/yy
-
-# Person Demographics & Salary Range
-profile.default.min_salary=45000.00
-profile.default.max_salary=180000.00
-profile.default.rent_percentage=0.25
-```
+  - Models demographic profiles (`PersonProfile`), customizable account holder names (`--name "Ankit Singh"`), account numbers (`--account-number "50100987654321"`), and realistic salary/expense flows.
 
 ---
 
@@ -90,29 +32,49 @@ profile.default.rent_percentage=0.25
 mvn clean package
 ```
 
-### Run Generator
+### Run Generator (Default: HDFC Bank Statement + User Details CSV)
 ```bash
-java -jar target/finstream-transactions-generator-1.0-SNAPSHOT.jar \
+java -jar target/finstream-transactions-generator-1.0.1-SNAPSHOT.jar \
   --name "Ankit Kumar Singh" \
   --account-number "50100987654321" \
   -n 50 \
-  -b 75000
+  -b 75000 \
+  -o ./output_dir/
 ```
-*Generated file*: `ANKIT_KUMAR_SINGH_50100987654321_HDFC_statement.csv`
+
+*Generated Files*:
+- **Bank Statement**: `./output_dir/ANKIT_KUMAR_SINGH_50100987654321_HDFC_statement.csv`
+- **User Details**: `./output_dir/ANKIT_KUMAR_SINGH_50100987654321_user_details.csv`
 
 ---
 
-## 📊 Sample Output (`HDFC` CSV Format)
+## ⚙️ CLI Options
+
+```
+Usage: generate [-hV] [-b=<initialBalance>] [-c=<configPath>]
+                [--date-format=<dateFormat>] [--end-date=<endDateStr>]
+                [-n=<count>] [--name=<accountHolderName>]
+                [--account-number=<accountNumber>]
+                [-o=<outputPath>] [-s=<sourceName>] [--start-date=<startDateStr>]
+                [-t=<typeName>]
+
+Options:
+  -o, --output=<outputPath>          Target output directory (or file path). Default: current directory
+  -s, --source=<sourceName>          Source bank schema (HDFC, SBI, ALL). Default: HDFC
+      --name, --account-holder=<name>  Custom account holder name.
+      --account-number, --account-no   Custom account number.
+  -n, --count=<count>                Number of transactions to generate per statement.
+  -b, --initial-balance=<balance>    Starting account balance.
+  -h, --help                         Show help message.
+```
+
+---
+
+## 📄 User Details CSV Format Example
 
 ```csv
-Date,Narration Value Dat,Debit Amount,Credit Amount,Chq/Ref Number,Closing Balance
-22/07/26,NEFT DR-840115951616-STARBUCKS COFFEE,2185.19,,840115951616,72814.81
-22/07/26,UPI-900457039117-ELI RIPPIN-SBI-elirippin@upi,1401.55,,900457039117,71413.26
-25/07/26,NEFT DR-691233-MAKEMYTRIP,40187.73,,691233,31225.53
-27/07/26,UPI-063412-ZEPTO-PAYTM-zepto@paytm,1879.67,,063412,29345.86
-30/07/26,ACH C- DURGAN-FRAMI SALARY 744650,,214348.36,744650396268,235043.66
-09/08/26,NEFT DR-383575-OLA CABS,19375.39,,383575,215668.27
-10/08/26,IMPS-270244-SHELLEY STARK-KOTAK,37084.97,,270244,177961.68
+Name,Email,Mobile Number,Account Number,IFSC Code,UPI ID,Customer ID,Company Name,Monthly Salary
+ANKIT KUMAR SINGH,ankitkumarsingh542@example.com,+919876543210,50100987654321,HDFC0001234,ankitkumarsingh@okhdfcbank,CUST0987654,GOOGLE INDIA,125000.00
 ```
 
 ---

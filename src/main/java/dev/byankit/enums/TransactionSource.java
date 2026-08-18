@@ -2,9 +2,7 @@ package dev.byankit.enums;
 
 public enum TransactionSource {
     HDFC("HDFC Bank"),
-    SBI("SBI Bank"),
-    PAYTM("Paytm Wallet"),
-    PAYZAPP("HDFC PayZapp Wallet");
+    SBI("SBI Bank");
 
     private final String name;
 

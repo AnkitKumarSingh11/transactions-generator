@@ -12,6 +12,7 @@ import dev.byankit.model.Transaction;
 import dev.byankit.schema.SchemaRegistry;
 import dev.byankit.schema.StatementSchema;
 import dev.byankit.writer.CsvStatementWriter;
+import dev.byankit.writer.CsvUserWriter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -25,7 +26,7 @@ import java.util.concurrent.Callable;
         name = "generate",
         mixinStandardHelpOptions = true,
         version = "1.0.0",
-        description = "Universal synthetic financial transaction statement generator (HDFC, Paytm)."
+        description = "Universal synthetic financial bank transaction statement generator (HDFC, SBI)."
 )
 public class GenerateCommand implements Callable<Integer> {
 
@@ -37,14 +38,14 @@ public class GenerateCommand implements Callable<Integer> {
 
     @Option(
             names = {"-s", "--source"},
-            description = "Transaction source/bank schema (HDFC, PAYTM, ALL). Default: HDFC",
+            description = "Transaction source/bank schema (HDFC, SBI, ALL). Default: HDFC",
             defaultValue = "HDFC"
     )
     private String sourceName;
 
     @Option(
             names = {"-t", "--type"},
-            description = "Transaction type (BANKSTATEMENT, UPISERVICE, WALLET)."
+            description = "Transaction type (BANKSTATEMENT, UPISERVICE)."
     )
     private String typeName;
 
@@ -62,7 +63,7 @@ public class GenerateCommand implements Callable<Integer> {
 
     @Option(
             names = {"-o", "--output"},
-            description = "Output CSV file path (Default: auto-generated based on Name & Account/Paytm ID)."
+            description = "Output directory or specific file path (Default: current directory with auto-generated filename)."
     )
     private String outputPath;
 
@@ -79,14 +80,8 @@ public class GenerateCommand implements Callable<Integer> {
     private String accountNumber;
 
     @Option(
-            names = {"--paytm-id"},
-            description = "Custom Paytm ID / VPA (e.g. 'paytm.s1mdx1j@pty'). Default: Randomly generated"
-    )
-    private String paytmId;
-
-    @Option(
             names = {"--start-date"},
-            description = "Start date (YYYY-MM-DD). Default: 30 days ago",
+            description = "Start date (YYYY-MM-DD). Default: 5 years ago",
             defaultValue = ""
     )
     private String startDateStr;
@@ -117,7 +112,7 @@ public class GenerateCommand implements Callable<Integer> {
 
             LocalDate startDate = (startDateStr != null && !startDateStr.isBlank())
                     ? LocalDate.parse(startDateStr)
-                    : LocalDate.now().minusDays(30);
+                    : LocalDate.now().minusYears(5);
 
             LocalDate endDate = (endDateStr != null && !endDateStr.isBlank())
                     ? LocalDate.parse(endDateStr)
@@ -126,7 +121,7 @@ public class GenerateCommand implements Callable<Integer> {
             List<TransactionSource> sourcesToGenerate = new ArrayList<>();
             if ("ALL".equalsIgnoreCase(sourceName.trim())) {
                 sourcesToGenerate.add(TransactionSource.HDFC);
-                sourcesToGenerate.add(TransactionSource.PAYTM);
+                sourcesToGenerate.add(TransactionSource.SBI);
             } else {
                 sourcesToGenerate.add(TransactionSource.fromString(sourceName));
             }
@@ -145,11 +140,9 @@ public class GenerateCommand implements Callable<Integer> {
                         .initialBalance(finalBalance)
                         .startDate(startDate)
                         .endDate(endDate)
-                        .outputPath(outputPath)
                         .dateFormat(finalDateFormat)
                         .accountHolderName(accountHolderName)
                         .accountNumber(accountNumber)
-                        .paytmId(paytmId)
                         .build();
 
                 StatementGenerator generator = StatementGeneratorFactory.getGenerator(source);
@@ -160,21 +153,21 @@ public class GenerateCommand implements Callable<Integer> {
                     profile = ((GenericStatementGenerator) generator).getLastGeneratedProfile();
                 }
 
-                // Determine output file path according to naming rules
-                String finalOutput = outputPath;
-                if (finalOutput == null || finalOutput.isBlank() || sourcesToGenerate.size() > 1) {
-                    if (profile != null) {
-                        String cleanName = profile.getFullName().replaceAll("[^a-zA-Z0-9]", "_");
-                        if (source == TransactionSource.PAYTM) {
-                            String cleanPaytmId = profile.getPaytmId().replaceAll("[^a-zA-Z0-9._-]", "_");
-                            finalOutput = String.format("%s_%s_PAYTM_statement.csv", cleanName, cleanPaytmId);
-                        } else {
-                            finalOutput = String.format("%s_%s_%s_statement.csv", cleanName, profile.getAccountNumber(), source.name());
-                        }
-                    } else {
-                        finalOutput = source.name().toLowerCase() + "_statement.csv";
-                    }
+                // Auto-generate standard filenames based on profile & schema
+                String autoFileName;
+                String autoUserFileName;
+                if (profile != null) {
+                    String cleanName = profile.getFullName().replaceAll("[^a-zA-Z0-9]", "_");
+                    autoFileName = String.format("%s_%s_%s_statement.csv", cleanName, profile.getAccountNumber(), source.name());
+                    autoUserFileName = String.format("%s_%s_user_details.csv", cleanName, profile.getAccountNumber());
+                } else {
+                    autoFileName = source.name().toLowerCase() + "_statement.csv";
+                    autoUserFileName = source.name().toLowerCase() + "_user_details.csv";
                 }
+
+                // Resolve output target files (handles directory input vs explicit file path input)
+                File targetFile = resolveOutputFile(outputPath, autoFileName, sourcesToGenerate.size() > 1);
+                File targetUserFile = resolveUserOutputFile(outputPath, targetFile, autoUserFileName, sourcesToGenerate.size() > 1);
 
                 StatementConfig updatedConfig = StatementConfig.builder()
                         .source(source)
@@ -183,39 +176,43 @@ public class GenerateCommand implements Callable<Integer> {
                         .initialBalance(finalBalance)
                         .startDate(startDate)
                         .endDate(endDate)
-                        .outputPath(finalOutput)
+                        .outputPath(targetFile.getAbsolutePath())
                         .dateFormat(finalDateFormat)
                         .accountHolderName(accountHolderName)
                         .accountNumber(accountNumber)
-                        .paytmId(paytmId)
                         .build();
 
                 CsvStatementWriter writer = new CsvStatementWriter();
                 writer.writeToFile(transactions, updatedConfig, schema);
 
-                File outputFile = new File(finalOutput);
+                if (profile != null) {
+                    CsvUserWriter userWriter = new CsvUserWriter();
+                    userWriter.writeToFile(profile, targetUserFile);
+                }
+
                 double endBalance = transactions.isEmpty() ? finalBalance : transactions.get(transactions.size() - 1).getClosingBalance();
 
                 System.out.println("=================================================");
                 System.out.println(" FinStream Statement Generator");
                 System.out.println("=================================================");
                 System.out.printf(" Account Holder  : %s%n", profile != null ? profile.getFullName() : (accountHolderName != null ? accountHolderName : "N/A"));
-                if (source == TransactionSource.PAYTM) {
-                    System.out.printf(" Paytm VPA / ID  : %s%n", profile != null ? profile.getPaytmId() : (paytmId != null ? paytmId : "N/A"));
-                } else {
-                    System.out.printf(" Account Number  : %s%n", profile != null ? profile.getAccountNumber() : (accountNumber != null ? accountNumber : "N/A"));
-                }
+                System.out.printf(" Account Number  : %s%n", profile != null ? profile.getAccountNumber() : (accountNumber != null ? accountNumber : "N/A"));
                 System.out.printf(" Schema / Source : %s (%s)%n", source.getName(), source.name());
                 System.out.printf(" Column Headers  : %s%n", String.join(", ", schema.getHeaders()));
                 System.out.printf(" Record Count    : %d%n", finalCount);
                 System.out.printf(" Start Balance   : ₹%.2f%n", finalBalance);
                 System.out.printf(" Date Range      : %s to %s%n", startDate, endDate);
-                System.out.printf(" Output File     : %s%n", finalOutput);
+                System.out.printf(" Statement File  : %s%n", targetFile.getName());
+                if (targetUserFile != null && targetUserFile.exists()) {
+                    System.out.printf(" User Details    : %s%n", targetUserFile.getName());
+                }
                 System.out.println("-------------------------------------------------");
                 System.out.println(" Status          : SUCCESS");
                 System.out.printf(" Ending Balance  : ₹%.2f%n", endBalance);
-                System.out.printf(" File Size       : %d bytes%n", outputFile.length());
-                System.out.printf(" Absolute Path   : %s%n", outputFile.getAbsolutePath());
+                System.out.printf(" Statement Path  : %s%n", targetFile.getAbsolutePath());
+                if (targetUserFile != null && targetUserFile.exists()) {
+                    System.out.printf(" User Details Path: %s%n", targetUserUserPathOrAbs(targetUserFile));
+                }
                 System.out.println("=================================================");
             }
 
@@ -226,4 +223,60 @@ public class GenerateCommand implements Callable<Integer> {
             return 1;
         }
     }
+
+    private String targetUserUserPathOrAbs(File f) {
+        return f != null ? f.getAbsolutePath() : "N/A";
+    }
+
+    private File resolveOutputFile(String pathInput, String autoFileName, boolean isMultiSource) {
+        if (pathInput == null || pathInput.isBlank()) {
+            return new File(autoFileName);
+        }
+
+        File inputPath = new File(pathInput);
+
+        boolean isDirectory = isMultiSource
+                || inputPath.isDirectory()
+                || pathInput.endsWith("/")
+                || pathInput.endsWith("\\")
+                || (!inputPath.getName().contains(".") && !inputPath.exists());
+
+        if (isDirectory) {
+            if (!inputPath.exists()) {
+                inputPath.mkdirs();
+            }
+            return new File(inputPath, autoFileName);
+        } else {
+            return inputPath;
+        }
+    }
+
+    private File resolveUserOutputFile(String pathInput, File targetStatementFile, String autoUserFileName, boolean isMultiSource) {
+        if (pathInput == null || pathInput.isBlank()) {
+            return new File(autoUserFileName);
+        }
+
+        File inputPath = new File(pathInput);
+
+        boolean isDirectory = isMultiSource
+                || inputPath.isDirectory()
+                || pathInput.endsWith("/")
+                || pathInput.endsWith("\\")
+                || (!inputPath.getName().contains(".") && !inputPath.exists());
+
+        if (isDirectory) {
+            if (!inputPath.exists()) {
+                inputPath.mkdirs();
+            }
+            return new File(inputPath, autoUserFileName);
+        } else {
+            String parentDir = targetStatementFile.getParent();
+            String stmtName = targetStatementFile.getName();
+            String userFileName = stmtName.toLowerCase().endsWith(".csv")
+                    ? stmtName.substring(0, stmtName.length() - 4) + "_user_details.csv"
+                    : stmtName + "_user_details.csv";
+            return parentDir != null ? new File(parentDir, userFileName) : new File(userFileName);
+        }
+    }
 }
+

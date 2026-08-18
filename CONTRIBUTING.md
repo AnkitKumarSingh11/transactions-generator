@@ -35,7 +35,6 @@ Our codebase uses the **Strategy Pattern** for statement layouts. To add a new b
    ```java
    public enum TransactionSource {
        HDFC("HDFC Bank"),
-       PAYTM("Paytm Wallet"),
        SBI("SBI Bank"); // Add your bank here
    }
    ```
@@ -72,7 +71,6 @@ Our codebase uses the **Strategy Pattern** for statement layouts. To add a new b
    ```java
    static {
        register(new HdfcStatementSchema());
-       register(new PaytmStatementSchema());
        register(new SbiStatementSchema());
    }
    ```

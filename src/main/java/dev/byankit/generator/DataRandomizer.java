@@ -20,11 +20,11 @@ public class DataRandomizer {
     );
 
     private static final List<String> BANKS = List.of(
-            "HDFC", "ICICI", "SBI", "AXIS", "KOTAK", "PAYTM", "PNB"
+            "HDFC", "ICICI", "SBI", "AXIS", "KOTAK", "PNB"
     );
 
     private static final List<String> UPI_HANDLES = List.of(
-            "okicici", "okhdfcbank", "oksbi", "ybl", "paytm", "apl", "upi"
+            "okicici", "okhdfcbank", "oksbi", "ybl", "apl", "upi"
     );
 
     private static final List<String> CITIES = List.of(
